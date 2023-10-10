@@ -1,6 +1,5 @@
 # -*- coding: utf-8 -*-
 
-#导入库
 from torch import nn, cat
 import torch.nn.functional as F
 import torch
