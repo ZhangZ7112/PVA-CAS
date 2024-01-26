@@ -9,7 +9,7 @@ from torch import nn
 import sys
 from parameters_LFE import Parameters
 sys.path.append('../')
-from Dataloader_patch import DataLoad_patch
+from Dataloader_self import DataLoad_patch
 sys.path.append('../../../')
 from models.Unet_self import UNet
 from utils.loss import B_crossentropy

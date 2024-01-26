@@ -9,7 +9,7 @@ from torch import nn
 from parameters_GSR import Parameters
 import sys
 sys.path.append('../')
-from Dataloader_jun import DataLoad_update_pseudo
+from Dataloader_self import DataLoad_update_pseudo
 sys.path.append('../../../')
 from models.Unet_self import UNet, Proto_UNet
 from utils.loss import B_crossentropy, partial_entropy

@@ -37,6 +37,66 @@ def reshape_img(image, x, y, z):
 
     return out
 
+
+class DataLoad_patch(data.Dataset):
+    def __init__(self, i_txt, img_base,lab_base, patch_shape=(128,128,128)):
+        super(DataLoad_patch, self).__init__()
+        # self.image_filenames = [x for x in listdir(join(image_dir)) if is_image_file(x)]
+        self.image_file = read_file_from_txt(i_txt)
+        self.label_file = read_file_from_txt(i_txt)
+        self.img_base = img_base
+        self.lab_base = lab_base
+        self.patch_shape = patch_shape
+        self.mean, self.std = 840.0, 447.6             # statistical parameters of the dataset
+
+    def __getitem__(self, index):
+        image_path = self.img_base + self.image_file[index]
+        label_path = self.lab_base + self.label_file[index]
+        image = np.fromfile(file=image_path, dtype=np.int16)
+        target = np.fromfile(file=label_path, dtype=np.uint16)
+
+        z = int(image.shape[0]/(512*512))
+        shape = (z, 512, 512)
+
+        image = image.reshape(shape)
+        target = target.reshape(shape)
+        image = image.astype(np.float32)
+        target = target.astype(np.float32)
+
+        image = np.where(image < 0, 0.0, image)
+        image = np.where(image > 2048, 2048, image)
+        target = np.where(target > 0, 1, target)
+        image = (image - self.mean) / self.std
+        #target = to_categorical(target, 2)
+
+        while True:
+            center_z = np.random.randint(0, shape[0] - self.patch_shape[0], 1, dtype=np.int)[0]
+            if (shape[1] - self.patch_shape[1]) > 0:
+                center_y = np.random.randint(0, shape[1] - self.patch_shape[1], 1, dtype=np.int)[0]
+            else:
+                center_y = 0
+            if (shape[2] - self.patch_shape[2])>0:
+                center_x = np.random.randint(0, shape[2] - self.patch_shape[2], 1, dtype=np.int)[0]
+            else:
+                center_x = 0
+
+            temp_image = image[center_z:self.patch_shape[0] +
+                                   center_z, center_y:self.patch_shape[1] + center_y, center_x:self.patch_shape[2] + center_x]
+            temp_target = target[center_z:self.patch_shape[0] +
+                                     center_z, center_y:self.patch_shape[1] + center_y, center_x:self.patch_shape[2] + center_x]
+
+            if np.max(temp_target)==1:
+                break
+
+        image = temp_image[np.newaxis, :, :, :]  # b c d w h
+        target = temp_target[np.newaxis, :, :, :]
+
+        return image, target
+
+    def __len__(self):
+        return len(self.image_file)
+
+
 class DataLoad_update_pseudo(data.Dataset):
     def __init__(self, i_txt, img_base, GT_base, random_lumen_base, pseudo_base,update_pseudo_base,patch_shape=(256,512,512)):
         super(DataLoad_update_pseudo, self).__init__()
@@ -48,7 +108,7 @@ class DataLoad_update_pseudo(data.Dataset):
         self.pseudo_base = pseudo_base
         self.update_pseudo_base = update_pseudo_base
         self.patch_shape = patch_shape
-        self.mean, self.std = 840.0, 447.6
+        self.mean, self.std = 840.0, 447.6                        # statistical parameters of the dataset
 
     def __getitem__(self, index):
         img_name = self.image_file[index]
